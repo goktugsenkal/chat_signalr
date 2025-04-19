@@ -40,8 +40,7 @@ class _ChatPageState extends State<ChatPage> {
 
     // 1) build connection
     // 1) Create a dart:io HttpClient that ignores bad certs
-    final ioHttpClient = HttpClient()
-      ..badCertificateCallback = (cert, host, port) => true;
+    final ioHttpClient = HttpClient()..badCertificateCallback = (cert, host, port) => true;
 
 // 2) Wrap it in an IOClient (which implements BaseClient)
     final httpClient = IOClient(ioHttpClient);
@@ -49,11 +48,10 @@ class _ChatPageState extends State<ChatPage> {
 // 3) Build your HubConnection
     _hub = HubConnectionBuilder()
         .withUrl(
-          'https://localhost:5001/chatHub', // ← use 10.0.2.2 on the Android emulator
+          'https://192.168.1.155:5003/chatHub', // ← use 10.0.2.2 on the Android emulator
           HttpConnectionOptions(
             client: httpClient, // ← now it's a BaseClient
-            transport:
-                HttpTransportType.webSockets, // skip negotiation if you like
+            transport: HttpTransportType.webSockets, // skip negotiation if you like
             skipNegotiation: true,
           ),
         )
@@ -67,9 +65,14 @@ class _ChatPageState extends State<ChatPage> {
       final text = args[2] as String;
       final ts = DateTime.parse(args[3] as String);
       setState(() {
-        _messages
-            .add('[${ts.toLocal().toIso8601String()}][$room][$user]: $text');
+        _messages.add('[${ts.toLocal().toIso8601String()}][$room][$user]: $text');
       });
+    });
+
+    _hub.on('UserTyping', (args) {
+      final room = args![0] as String;
+      final user = args[1] as String;
+      setState(() => _messages.add('--- $user is typing in $room ---'));
     });
 
     // 3) start connection
@@ -108,10 +111,7 @@ class _ChatPageState extends State<ChatPage> {
         child: Column(
           children: [
             Row(children: [
-              Expanded(
-                  child: TextField(
-                      controller: _roomCtrl,
-                      decoration: const InputDecoration(labelText: 'Room'))),
+              Expanded(child: TextField(controller: _roomCtrl, decoration: const InputDecoration(labelText: 'Room'))),
               ElevatedButton(onPressed: _joinRoom, child: const Text('Join')),
             ]),
             const SizedBox(height: 12),
@@ -122,12 +122,8 @@ class _ChatPageState extends State<ChatPage> {
               ),
             ),
             Row(children: [
-              Expanded(
-                  child: TextField(
-                      controller: _msgCtrl,
-                      decoration: const InputDecoration(labelText: 'Message'))),
-              ElevatedButton(
-                  onPressed: _sendMessage, child: const Text('Send')),
+              Expanded(child: TextField(controller: _msgCtrl, decoration: const InputDecoration(labelText: 'Message'))),
+              ElevatedButton(onPressed: _sendMessage, child: const Text('Send')),
             ]),
           ],
         ),
