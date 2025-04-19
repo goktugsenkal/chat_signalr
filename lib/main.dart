@@ -42,6 +42,12 @@ class _ChatPageState extends State<ChatPage> {
     // 1) Create a dart:io HttpClient that ignores bad certs
     final ioHttpClient = HttpClient()..badCertificateCallback = (cert, host, port) => true;
 
+    _msgCtrl.addListener(() {
+      if (_msgCtrl.text.isNotEmpty) {
+        _typing();
+      }
+    });
+
 // 2) Wrap it in an IOClient (which implements BaseClient)
     final httpClient = IOClient(ioHttpClient);
 
@@ -72,6 +78,7 @@ class _ChatPageState extends State<ChatPage> {
     _hub.on('UserTyping', (args) {
       final room = args![0] as String;
       final user = args[1] as String;
+      print('--- $user is typing in $room ---');
       setState(() => _messages.add('--- $user is typing in $room ---'));
     });
 
@@ -100,6 +107,13 @@ class _ChatPageState extends State<ChatPage> {
     if (room.isEmpty || msg.isEmpty) return;
     await _hub.invoke('SendMessage', args: [room, 'FlutterUser', msg]);
     _msgCtrl.clear();
+  }
+
+  Future<void> _typing() async {
+    final room = _roomCtrl.text.trim();
+    if (room.isEmpty) return;
+    if (_messages.isNotEmpty && _messages.last.contains('--- FlutterUser is typing in $room ---')) return;
+    await _hub.invoke('Typing', args: [room, 'FlutterUser']);
   }
 
   @override
